@@ -1,0 +1,21 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home page";
+}
+
+<h1>Boards</h1>
+
+<form method="post">
+    <input asp-for="Name" placeholder="Board name" />
+    <button type="submit" asp-page-handler="Create">Create</button>
+</form>
+
+<ul>
+    @foreach (var b in Model.Boards)
+    {
+        <li>
+            <a asp-page="Board" asp-route-id="@b.Id">@b.Name</a>
+        </li>
+    }
+</ul>
