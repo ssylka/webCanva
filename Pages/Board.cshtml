@@ -266,7 +266,7 @@
         link.click();
     });
 
-    // 🔥 ЗАГРУЗКА ИЗ БД
+
     const shapes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Shapes));
     shapes.forEach(s => {
         drawShape(s.Type, s.Color, s.Size, JSON.parse(s.DataJson));
@@ -301,11 +301,9 @@
 
         const tctx = tempCanvas.getContext("2d");
 
-        // фон
         tctx.fillStyle = "#2c2c54";
         tctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-        // масштабируем картинку
         tctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, tempCanvas.width, tempCanvas.height);
 
         const image = tempCanvas.toDataURL("image/jpeg", 0.6);
