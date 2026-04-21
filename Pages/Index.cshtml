@@ -25,7 +25,9 @@
 
                 @if (!string.IsNullOrEmpty(b.PreviewImage))
                 {
-                    <img src="@b.PreviewImage" class="preview" />
+                <a  asp-page="Board" asp-route-id="@b.Id">
+                    <img src="@b.PreviewImage" class="preview"/>
+                </a>
                 }
                 else
                 {

@@ -258,7 +258,10 @@
         tempCtx.drawImage(canvas, 0, 0);
 
         const link = document.createElement("a");
-        link.download = "drawing.png";
+
+        let boardName = "@Model.Board.Name";
+        boardName = boardName.replace(/[\\/:*?"<>|]/g, "_");
+        link.download = boardName + ".png";
         link.href = tempCanvas.toDataURL("image/png");
         link.click();
     });
