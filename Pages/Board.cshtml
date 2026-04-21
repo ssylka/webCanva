@@ -1,10 +1,9 @@
 ﻿@page
 @using System.Text.Json
 @model DrowingTogether.Pages.BoardModel
-<h1>@Model.Board.Name</h1>
+
 <div class="toolbar">
     <input type="color" id="colorPicker" value="#000000" />
-
     <input type="range" id="sizePicker" min="1" max="20" value="3" />
 
     <button data-tool="pen">✏️</button>
@@ -12,18 +11,19 @@
     <button data-tool="rect">⬛</button>
     <button data-tool="circle">⚪</button>
     <button data-tool="text">T</button>
+    <button data-tool="select">🔲</button>
 
     <button id="exportBtn">💾 JPG</button>
 </div>
 
 <canvas id="board"></canvas>
 
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
 
 <script>
     const canvas = document.getElementById("board");
     const ctx = canvas.getContext("2d");
+
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
@@ -31,12 +31,94 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
     }
-
-    let currentStroke = [];
-    
     resize();
     window.addEventListener("resize", resize);
+
+    // ===== STATE =====
+    let currentTool = "pen";
+    let currentColor = "#000000";
+    let currentSize = 3;
+    let drawing = false;
+    let currentStroke = [];
+    let startX, startY;
+    let lastRemote = null;
+    let isSelecting = false;
+    let selectionStart = null;
+    let selectionEnd = null;
+
+
+    // ===== TOOLS =====
+    document.querySelectorAll("[data-tool]").forEach(btn => {
+        btn.addEventListener("click", () => {
+            currentTool = btn.dataset.tool;
+        });
+    });
+
+    // ===== UI =====
+    document.getElementById("colorPicker").addEventListener("input", e => {
+        currentColor = e.target.value;
+    });
+
+    document.getElementById("sizePicker").addEventListener("input", e => {
+        currentSize = Number(e.target.value);
+    });
+
+    // ===== EXPORT =====
+        document.getElementById("exportBtn").addEventListener("click", () => {
+
+        // 1. сохраняем область
+        let sx = 0, sy = 0, sw = canvas.width, sh = canvas.height;
+
+        if (selectionStart && selectionEnd) {
+            sx = Math.min(selectionStart.x, selectionEnd.x);
+            sy = Math.min(selectionStart.y, selectionEnd.y);
+            sw = Math.abs(selectionEnd.x - selectionStart.x);
+            sh = Math.abs(selectionEnd.y - selectionStart.y);
+        }
+
+        // 2. ВРЕМЕННО убираем рамку
+        const prevStart = selectionStart;
+        const prevEnd = selectionEnd;
+
+        selectionStart = null;
+        selectionEnd = null;
+
+        redraw(); // ← перерисовываем без рамки
+
+        // 3. делаем экспорт
+        const scale = 2;
+
+        const tempCanvas = document.createElement("canvas");
+        const tempCtx = tempCanvas.getContext("2d");
+
+        tempCanvas.width = sw * scale;
+        tempCanvas.height = sh * scale;
+
+        tempCtx.fillStyle = "#ffffff";
+        tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+        tempCtx.scale(scale, scale);
+
+        tempCtx.drawImage(
+            canvas,
+            sx, sy, sw, sh,
+            0, 0, sw, sh
+        );
+
+        const link = document.createElement("a");
+        link.download = "drawing.jpg";
+        link.href = tempCanvas.toDataURL("image/jpeg", 0.95);
+        link.click();
+
+        // 4. окончательно очищаем выделение
+        selectionStart = null;
+        selectionEnd = null;
+        currentTool = "pen";
+    });
+
+    // ===== LOAD OLD =====
     const existingStrokes = @Html.Raw(JsonSerializer.Serialize(Model.Strokes));
+
     existingStrokes.forEach(s => {
         const points = JSON.parse(s.PointsJson);
 
@@ -47,47 +129,13 @@
         ctx.moveTo(points[0].X, points[0].Y);
 
         for (let i = 1; i < points.length; i++) {
-            ctx.lineTo(points[i].x, points[i].y);
+            ctx.lineTo(points[i].X, points[i].Y);
         }
 
         ctx.stroke();
     });
 
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "black";
-    let currentColor = "#000000";
-    let currentSize = 3;
-    let isEraser = false;
-
-    const colorPicker = document.getElementById("colorPicker");
-    const sizePicker = document.getElementById("sizePicker");
-    const eraserBtn = document.getElementById("eraserBtn");
-    const penBtn = document.getElementById("penBtn");
-
-    // цвет
-    colorPicker.addEventListener("input", (e) => {
-        currentColor = e.target.value;
-        isEraser = false;
-    });
-
-    // толщина
-    sizePicker.addEventListener("input", (e) => {
-        currentSize = Number(e.target.value);
-    });
-
-    // ластик
-    eraserBtn.addEventListener("click", () => {
-        isEraser = true;
-        currentColor = "#FFFFFF";
-    });
-
-    // карандаш
-    penBtn.addEventListener("click", () => {
-        isEraser = false;
-        currentColor = colorPicker.value;
-
-    });
-    let drawing = false;
+    // ===== SIGNALR =====
     const boardId = "@Model.Board.Id";
 
     const connection = new signalR.HubConnectionBuilder()
@@ -98,20 +146,18 @@
         connection.invoke("JoinBoard", boardId);
     });
 
-    let lastRemote = null;
-
-    connection.on("ReceiveStart", (x, y) => { // dot
+    connection.on("ReceiveStart", (x, y) => {
         ctx.beginPath();
         ctx.moveTo(x, y);
         lastRemote = { x, y };
     });
 
-    connection.on("ReceiveDraw", (x, y, color, size) => { // line
+    connection.on("ReceiveDraw", (x, y, color, size) => {
         ctx.strokeStyle = color;
         ctx.lineWidth = size;
 
         if (lastRemote) {
-            ctx.moveTo(lastRemote.x, lastRemote.y); // фикс разрывов
+            ctx.moveTo(lastRemote.x, lastRemote.y);
         }
 
         ctx.lineTo(x, y);
@@ -125,53 +171,155 @@
         ctx.strokeStyle = color;
         ctx.lineWidth = size;
 
-        ctx.moveTo(points[0].x, points[0].y);
+        ctx.moveTo(points[0].X, points[0].Y);
 
         for (let i = 1; i < points.length; i++) {
-            ctx.lineTo(points[i].x, points[i].y);
+            ctx.lineTo(points[i].X, points[i].Y);
         }
 
         ctx.stroke();
     });
-    canvas.addEventListener("mousedown", (e) => {
+
+    // ===== DRAW =====
+    canvas.addEventListener("mousedown", e => {
         drawing = true;
         currentStroke = [];
 
-        currentStroke.push({ x: e.offsetX, y: e.offsetY });
+        startX = e.offsetX;
+        startY = e.offsetY;
 
-        ctx.beginPath();
-        ctx.moveTo(e.offsetX, e.offsetY);
+        if (currentTool === "pen" || currentTool === "eraser") {
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            currentStroke.push({ X: startX, Y: startY });
 
-        ctx.strokeStyle = isEraser ? "white" : currentColor;
-        ctx.lineWidth = currentSize;
+            connection.invoke("SendStart", boardId, startX, startY);
+        }
 
-        connection.invoke("SendStart", boardId, e.offsetX, e.offsetY);
+        if (currentTool === "select") {
+            isSelecting = true;
+            selectionStart = { x: e.offsetX, y: e.offsetY };
+            selectionEnd = null;
+            return;
+        }
     });
+    function drawSelection() {
+        if (!selectionStart || !selectionEnd) return;
+
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = "blue";
+
+        ctx.strokeRect(
+            selectionStart.x,
+            selectionStart.y,
+            selectionEnd.x - selectionStart.x,
+            selectionEnd.y - selectionStart.y
+        );
+
+        ctx.setLineDash([]);
+    }
+
+    function redraw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        existingStrokes.forEach(s => {
+            const points = JSON.parse(s.PointsJson);
+
+            ctx.beginPath();
+            ctx.strokeStyle = s.Color;
+            ctx.lineWidth = s.Size;
+
+            ctx.moveTo(points[0].X, points[0].Y);
+
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].X, points[i].Y);
+            }
+
+            ctx.stroke();
+        });
+
+        drawSelection();
+    }
 
     let lastSendTime = 0;
-    const SEND_INTERVAL = 33; // ~30 FPS
-    canvas.addEventListener("mousemove", (e) => {
+    const SEND_INTERVAL = 33;
+
+    canvas.addEventListener("mousemove", e => {
         if (!drawing) return;
+
         const now = Date.now();
 
-        ctx.strokeStyle = isEraser ? "white" : currentColor;
-        ctx.lineWidth = currentSize;
+        const x = e.offsetX;
+        const y = e.offsetY;
 
-        currentStroke.push({ x: e.offsetX, y: e.offsetY });
+        if (currentTool === "pen" || currentTool === "eraser") {
+            ctx.globalCompositeOperation =
+                currentTool === "eraser" ? "destination-out" : "source-over";
 
-        ctx.lineTo(e.offsetX, e.offsetY);
-        ctx.stroke();
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = currentSize;
 
-        if (now - lastSendTime > SEND_INTERVAL) {
-            lastSendTime = now;
+            ctx.lineTo(x, y);
+            ctx.stroke();
 
-            connection.invoke("SendDraw", boardId, e.offsetX, e.offsetY, currentColor, currentSize);
+            currentStroke.push({ X: x, Y: y });
+
+            if (now - lastSendTime > SEND_INTERVAL) {
+                lastSendTime = now;
+                connection.invoke("SendDraw", boardId, x, y, currentColor, currentSize);
+            }
+        }
+
+        if (isSelecting) {
+            selectionEnd = { x: e.offsetX, y: e.offsetY };
+            redraw();
+            return;
         }
     });
 
-    canvas.addEventListener("mouseup", () => {
-        drawing = false; 
-        connection.invoke("SendStroke", boardId, currentColor, currentSize, currentStroke);
+    canvas.addEventListener("mouseup", e => {
+        drawing = false;
+
+        const x = e.offsetX;
+        const y = e.offsetY;
+
+        ctx.globalCompositeOperation = "source-over";
+
+        if (currentTool === "rect") {
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = currentSize;
+            ctx.strokeRect(startX, startY, x - startX, y - startY);
+        }
+
+        if (currentTool === "circle") {
+            ctx.beginPath();
+            ctx.strokeStyle = currentColor;
+            ctx.lineWidth = currentSize;
+
+            const r = Math.hypot(x - startX, y - startY);
+            ctx.arc(startX, startY, r, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        if (currentTool === "text") {
+            const text = prompt("Введите текст");
+            if (text) {
+                ctx.fillStyle = currentColor;
+                ctx.font = `${currentSize * 5}px sans-serif`;
+                ctx.fillText(text, x, y);
+            }
+        }
+
+        if (currentTool === "pen" || currentTool === "eraser") {
+            connection.invoke("SendStroke", boardId, currentColor, currentSize, currentStroke);
+        }
+        if (currentTool === "select") {
+            isSelecting = false;
+            selectionEnd = { x: e.offsetX, y: e.offsetY };
+            redraw();
+            return;
+        }
     });
+
     canvas.addEventListener("mouseleave", () => drawing = false);
-</script>
+</script> 

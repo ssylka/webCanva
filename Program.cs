@@ -19,7 +19,6 @@ namespace DrowingTogether
                     builder.Configuration.GetConnectionString("DefaultConnection")
                 ));
             builder.Services.AddScoped<BoardService>();
-            builder.Services.AddSignalR();
             builder.Services.AddScoped<StrokeService>();
             builder.Services.AddSignalR(options =>
             {
