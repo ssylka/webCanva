@@ -1,41 +1,55 @@
 ﻿@page
 @using System.Text.Json
 @model DrowingTogether.Pages.BoardModel
-<h1>@Model.Board.Name</h1>
-<div class="toolbar">
-    <input type="color" id="colorPicker" value="#000000" />
 
-    <input type="range" id="sizePicker" min="1" max="20" value="3" />
+<div class="board-page">
 
-    <button id="penBtn">✏️</button>
-    <button id="eraserBtn">🧽</button>
-    <button data-tool="rect">⬛</button>
-    <button data-tool="circle">⚪</button>
-    <button data-tool="text">T</button>
+    <!-- 🔥 Верхняя панель -->
+    <div class="top-bar">
+        <h1>@Model.Board.Name</h1>
 
-    <button id="exportBtn">💾 JPG</button>
+        <div class="toolbar">
+            <input type="color" id="colorPicker" value="#000000" />
+            <input type="range" id="sizePicker" min="1" max="20" value="3" />
+
+            <button id="penBtn">✏️</button>
+            <button id="eraserBtn">🧽</button>
+            <button data-tool="rect">⬛</button>
+            <button data-tool="circle">⚪</button>
+            <button data-tool="text">T</button>
+
+            <button id="exportBtn">💾 JPG</button>
+        </div>
+    </div>
+
+    <!-- 🔥 Canvas теперь отдельно -->
+    <div class="canvas-container">
+        <canvas id="board"></canvas>
+    </div>
+
 </div>
-
-<canvas id="board"></canvas>
-
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
 
 <script>
     const canvas = document.getElementById("board");
     const ctx = canvas.getContext("2d");
+
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
     function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        const rect = canvas.getBoundingClientRect();
+
+        canvas.width = rect.width;
+        canvas.height = rect.height;
     }
 
-    let currentStroke = [];
-    
-    resize();
     window.addEventListener("resize", resize);
+    resize();
+
+    let currentStroke = [];
+
     const existingStrokes = @Html.Raw(JsonSerializer.Serialize(Model.Strokes));
     existingStrokes.forEach(s => {
         const points = JSON.parse(s.PointsJson);
@@ -53,40 +67,29 @@
         ctx.stroke();
     });
 
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "black";
     let currentColor = "#000000";
     let currentSize = 3;
     let isEraser = false;
 
-    const colorPicker = document.getElementById("colorPicker");
-    const sizePicker = document.getElementById("sizePicker");
-    const eraserBtn = document.getElementById("eraserBtn");
-    const penBtn = document.getElementById("penBtn");
-
-    // цвет
-    colorPicker.addEventListener("input", (e) => {
+    document.getElementById("colorPicker").addEventListener("input", e => {
         currentColor = e.target.value;
         isEraser = false;
     });
 
-    // толщина
-    sizePicker.addEventListener("input", (e) => {
+    document.getElementById("sizePicker").addEventListener("input", e => {
         currentSize = Number(e.target.value);
     });
 
-    // ластик
-    eraserBtn.addEventListener("click", () => {
+    document.getElementById("eraserBtn").onclick = () => {
         isEraser = true;
-        currentColor = "#FFFFFF";
-    });
+        currentColor = "#2c2c54";
+    };
 
-    // карандаш
-    penBtn.addEventListener("click", () => {
+    document.getElementById("penBtn").onclick = () => {
         isEraser = false;
-        currentColor = colorPicker.value;
+        currentColor = document.getElementById("colorPicker").value;
+    };
 
-    });
     let drawing = false;
     const boardId = "@Model.Board.Id";
 
@@ -100,18 +103,18 @@
 
     let lastRemote = null;
 
-    connection.on("ReceiveStart", (x, y) => { // dot
+    connection.on("ReceiveStart", (x, y) => {
         ctx.beginPath();
         ctx.moveTo(x, y);
         lastRemote = { x, y };
     });
 
-    connection.on("ReceiveDraw", (x, y, color, size) => { // line
+    connection.on("ReceiveDraw", (x, y, color, size) => {
         ctx.strokeStyle = color;
         ctx.lineWidth = size;
 
         if (lastRemote) {
-            ctx.moveTo(lastRemote.x, lastRemote.y); // фикс разрывов
+            ctx.moveTo(lastRemote.x, lastRemote.y);
         }
 
         ctx.lineTo(x, y);
@@ -133,50 +136,64 @@
 
         ctx.stroke();
     });
+
+        let drawing = false;
+    let isInside = false;
+
     canvas.addEventListener("mousedown", (e) => {
         drawing = true;
-        currentStroke = [];
+        isInside = true;
 
-        currentStroke.push({ x: e.offsetX, y: e.offsetY });
+        currentStroke = [];
 
         ctx.beginPath();
         ctx.moveTo(e.offsetX, e.offsetY);
 
-        ctx.strokeStyle = isEraser ? "white" : currentColor;
+        currentStroke.push({ x: e.offsetX, y: e.offsetY });
+
+        ctx.strokeStyle = isEraser ? "#2c2c54" : currentColor;
         ctx.lineWidth = currentSize;
 
         connection.invoke("SendStart", boardId, e.offsetX, e.offsetY);
     });
 
-    let lastSendTime = 0;
-    const SEND_INTERVAL = 33; // ~30 FPS
     canvas.addEventListener("mousemove", (e) => {
-        if (!drawing) return;
-        const now = Date.now();
-
-        ctx.strokeStyle = isEraser ? "white" : currentColor;
-        ctx.lineWidth = currentSize;
-
-        currentStroke.push({ x: e.offsetX, y: e.offsetY });
+        if (!drawing || !isInside) return;
 
         ctx.lineTo(e.offsetX, e.offsetY);
         ctx.stroke();
 
-        if (now - lastSendTime > SEND_INTERVAL) {
-            lastSendTime = now;
+        currentStroke.push({ x: e.offsetX, y: e.offsetY });
 
-            connection.invoke("SendDraw", boardId, e.offsetX, e.offsetY, currentColor, currentSize);
+        connection.invoke("SendDraw", boardId, e.offsetX, e.offsetY, currentColor, currentSize);
+    });
+
+    canvas.addEventListener("mouseup", stopDrawing);
+    canvas.addEventListener("mouseleave", () => {
+        isInside = false;
+        stopDrawing();
+    });
+
+    canvas.addEventListener("mouseenter", () => {
+        isInside = true;
+    });
+
+    /* 🔥 универсальная остановка */
+    function stopDrawing() {
+        if (!drawing) return;
+
+        drawing = false;
+
+        if (currentStroke.length > 1) {
+            connection.invoke("SendStroke", boardId, currentColor, currentSize, currentStroke);
+            savePreview();
         }
-    });
 
-    canvas.addEventListener("mouseup", () => {
-        drawing = false; 
-        connection.invoke("SendStroke", boardId, currentColor, currentSize, currentStroke);
-        savePreview();
-    });
-    canvas.addEventListener("mouseleave", () => drawing = false);
+        currentStroke = [];
+        ctx.beginPath(); // 🔥 сброс пути
+    }
 
-        function savePreview() {
+    function savePreview() {
         const tempCanvas = document.createElement("canvas");
         const scale = 0.2;
 
@@ -185,30 +202,17 @@
 
         const tctx = tempCanvas.getContext("2d");
 
-        // 🔥 1. ЗАЛИВАЕМ ФОН вручную (ВАЖНО)
-        tctx.fillStyle = "#2c2c54"; // твой фон
+        tctx.fillStyle = "#2c2c54";
         tctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-        // 🔥 2. Рисуем оригинальный canvas с масштабом
-        tctx.drawImage(
-            canvas,
-            0, 0, canvas.width, canvas.height, // источник
-            0, 0, tempCanvas.width, tempCanvas.height // куда
-        );
+        tctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, tempCanvas.width, tempCanvas.height);
 
-        // 🔥 3. Сохраняем
         const image = tempCanvas.toDataURL("image/jpeg", 0.6);
 
         fetch("/api/preview", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                boardId: boardId,
-                image: image
-            })
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ boardId, image })
         });
     }
-
 </script>
