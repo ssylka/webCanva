@@ -138,10 +138,10 @@ h1 {
     backdrop-filter: blur(10px);
 }
 
-    .top-bar h1 {
-        margin: 0;
-        font-size: 22px;
-    }
+.top-bar h1 {
+    margin: 0;
+    font-size: 22px;
+}
 
 .toolbar {
     display: flex;
@@ -161,12 +161,4 @@ h1 {
     width: 100%;
     height: 100%;
     display: block;
-}
-
-/* текст */
-.canvas-text {
-    position: absolute;
-    border: 1px solid #aaa;
-    outline: none;
-    font-size: 20px;
 }

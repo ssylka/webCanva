@@ -13,10 +13,10 @@
 
         <button data-tool="pen">✏️</button>
         <button data-tool="eraser">🧽</button>
+        <button data-tool="line">📏</button>
         <button data-tool="rect">⬛</button>
         <button data-tool="square">◼️</button>
         <button data-tool="circle">⚪</button>
-        <button data-tool="text">T</button>
         <button id="exportBtn">💾 JPG</button>
     </div>
 </div>
@@ -63,6 +63,8 @@
         const rect = canvas.getBoundingClientRect();
         canvas.width = rect.width;
         canvas.height = rect.height;
+        ctx.fillStyle = "#2c2c54";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
     window.addEventListener("resize", resize);
     resize();
@@ -77,14 +79,8 @@
         startY = e.offsetY;
 
         snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        console.log(snapshot);
-        currentPoints = [{ x: startX, y: startY }];
 
-        if (tool === "text") {
-            createTextInput(e.offsetX, e.offsetY);
-            drawing = false;
-            return;
-        }
+        currentPoints = [{ x: startX, y: startY }];
 
         ctx.beginPath();
         ctx.moveTo(startX, startY);
@@ -99,7 +95,7 @@
         const x = e.offsetX;
         const y = e.offsetY;
 
-        if (tool !== "pen" && tool !== "eraser") {
+        if (snapshot && (tool !== "pen" && tool !== "eraser")) {
             ctx.putImageData(snapshot, 0, 0);
         }
 
@@ -123,6 +119,12 @@
             let radius = Math.hypot(x - startX, y - startY);
             ctx.beginPath();
             ctx.arc(startX, startY, radius, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+        if (tool === "line") {
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(x, y);
             ctx.stroke();
         }
     });
@@ -153,10 +155,12 @@
             let r = Math.hypot(x - startX, y - startY);
             data = { x: startX, y: startY, r };
         }
+        if (tool === "line") {
+            data = { x1: startX, y1: startY, x2: x, y2: y };
+        }
 
         if (data) {
             connection.invoke("SendShape", boardId, tool, currentColor, currentSize, data);
-
             setTimeout(savePreview, 150);
         }
     });
@@ -195,8 +199,6 @@
         }
     });
 
-
-    // 🔥 ОТРИСОВКА ВСЕГО
     function drawShape(type, color, size, data) {
         ctx.strokeStyle = color;
         ctx.lineWidth = size;
@@ -235,11 +237,11 @@
             ctx.arc(data.x, data.y, data.r, 0, Math.PI * 2);
             ctx.stroke();
         }
-
-        if (type === "text") {
-            ctx.fillStyle = color;
-            ctx.font = "20px Arial";
-            ctx.fillText(data.text, data.x, data.y);
+        if (type === "line") {
+            ctx.beginPath();
+            ctx.moveTo(data.x1, data.y1);
+            ctx.lineTo(data.x2, data.y2);
+            ctx.stroke();
         }
     }
 
@@ -267,35 +269,6 @@
         drawShape(s.Type, s.Color, s.Size, JSON.parse(s.DataJson));
     });
 
-    // 🔥 TEXT TOOL
-    function createTextInput(x, y) {
-        const input = document.createElement("input");
-        input.type = "text";
-        input.className = "canvas-text";
-
-        input.style.left = x + "px";
-        input.style.top = y + "px";
-
-        document.body.appendChild(input);
-        input.focus();
-
-        function finish() {
-            const text = input.value;
-
-            drawShape("text", currentColor, currentSize, { x, y, text });
-
-            connection.invoke("SendShape", boardId, "text", currentColor, currentSize, { x, y, text });
-
-            input.remove();
-        }
-
-        input.addEventListener("keydown", e => {
-            if (e.key === "Enter") finish();
-        });
-
-        input.addEventListener("blur", finish);
-    }
-       
     function stopDrawing() {
         if (!drawing) return;
 
