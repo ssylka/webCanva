@@ -7,8 +7,8 @@
 
     <input type="range" id="sizePicker" min="1" max="20" value="3" />
 
-    <button data-tool="pen">✏️</button>
-    <button data-tool="eraser">🧽</button>
+    <button id="penBtn">✏️</button>
+    <button id="eraserBtn">🧽</button>
     <button data-tool="rect">⬛</button>
     <button data-tool="circle">⚪</button>
     <button data-tool="text">T</button>
@@ -47,7 +47,7 @@
         ctx.moveTo(points[0].X, points[0].Y);
 
         for (let i = 1; i < points.length; i++) {
-            ctx.lineTo(points[i].x, points[i].y);
+            ctx.lineTo(points[i].X, points[i].Y);
         }
 
         ctx.stroke();
@@ -125,10 +125,10 @@
         ctx.strokeStyle = color;
         ctx.lineWidth = size;
 
-        ctx.moveTo(points[0].x, points[0].y);
+        ctx.moveTo(points[0].X, points[0].Y);
 
         for (let i = 1; i < points.length; i++) {
-            ctx.lineTo(points[i].x, points[i].y);
+            ctx.lineTo(points[i].X, points[i].Y);
         }
 
         ctx.stroke();
@@ -172,6 +172,43 @@
     canvas.addEventListener("mouseup", () => {
         drawing = false; 
         connection.invoke("SendStroke", boardId, currentColor, currentSize, currentStroke);
+        savePreview();
     });
     canvas.addEventListener("mouseleave", () => drawing = false);
+
+        function savePreview() {
+        const tempCanvas = document.createElement("canvas");
+        const scale = 0.2;
+
+        tempCanvas.width = canvas.width * scale;
+        tempCanvas.height = canvas.height * scale;
+
+        const tctx = tempCanvas.getContext("2d");
+
+        // 🔥 1. ЗАЛИВАЕМ ФОН вручную (ВАЖНО)
+        tctx.fillStyle = "#2c2c54"; // твой фон
+        tctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+        // 🔥 2. Рисуем оригинальный canvas с масштабом
+        tctx.drawImage(
+            canvas,
+            0, 0, canvas.width, canvas.height, // источник
+            0, 0, tempCanvas.width, tempCanvas.height // куда
+        );
+
+        // 🔥 3. Сохраняем
+        const image = tempCanvas.toDataURL("image/jpeg", 0.6);
+
+        fetch("/api/preview", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                boardId: boardId,
+                image: image
+            })
+        });
+    }
+
 </script>

@@ -27,5 +27,16 @@ namespace DrowingTogether.Pages
             _service.Create(Name);
             return RedirectToPage();
         }
+        public IActionResult OnPostDelete(Guid id)
+        {
+            _service.Delete(id);
+            return RedirectToPage();
+        }
+
+        public IActionResult OnPostRename(Guid id, string name)
+        {
+            _service.Rename(id, name);
+            return new JsonResult("ok");
+        }
     }
 }

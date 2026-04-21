@@ -1,21 +1,91 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Boards";
 }
 
-<h1>Boards</h1>
+<div class="container">
 
-<form method="post">
-    <input asp-for="Name" placeholder="Board name" />
-    <button type="submit" asp-page-handler="Create">Create</button>
+    <h1>🎨 Drawing Boards</h1>
+
+    <!-- Поиск -->
+    <input type="text" id="search" placeholder="🔍 Search boards..." />
+
+    <!-- Создание -->
+    <form method="post" class="create-form">
+        <input asp-for="Name" placeholder="Enter board name..." />
+        <button type="submit" asp-page-handler="Create">Create</button>
+    </form>
+
+    <!-- Список -->
+    <div class="boards-grid" id="boardsGrid">
+        @foreach (var b in Model.Boards)
+        {
+            <div class="board-card" data-name="@b.Name.ToLower()">
+
+                @if (!string.IsNullOrEmpty(b.PreviewImage))
+                {
+                    <img src="@b.PreviewImage" class="preview" />
+                }
+                else
+                {
+                    <div class="no-preview">No preview</div>
+                }
+
+                <a class="board-link" asp-page="Board" asp-route-id="@b.Id">
+                    <h3>@b.Name</h3>
+                </a>
+
+                <div class="card-actions">
+                    <button onclick="renameBoard('@b.Id', '@b.Name')">✏️</button>
+                    <form method="post" asp-page-handler="Delete" asp-route-id="@b.Id">
+                        <button type="submit">🗑️</button>
+                    </form>
+                </div>
+
+            </div>
+        }
+    </div>
+
+</div>
+<form method="post" id="antiForgeryForm">
+    @Html.AntiForgeryToken()
 </form>
+<script>
+    // 🔍 Поиск
+    const search = document.getElementById("search");
+    const cards = document.querySelectorAll(".board-card");
 
-<ul>
-    @foreach (var b in Model.Boards)
-    {
-        <li>
-            <a asp-page="Board" asp-route-id="@b.Id">@b.Name</a>
-        </li>
+    search.addEventListener("input", () => {
+        const value = search.value.toLowerCase();
+
+        cards.forEach(c => {
+            const name = c.dataset.name;
+            c.style.display = name.includes(value) ? "block" : "none";
+        });
+    });
+
+    // ✏️ Переименование
+    function renameBoard(id, oldName) {
+        const newName = prompt("New name:", oldName);
+        if (!newName) return;
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+        const formData = new FormData();
+        formData.append("id", id);
+        formData.append("name", newName);
+        formData.append("__RequestVerificationToken", token);
+
+        fetch("?handler=Rename", {
+            method: "POST",
+            body: formData
+        }).then(res => {
+            if (!res.ok) {
+                alert("Ошибка: " + res.status);
+                return;
+            }
+            location.reload();
+        });
     }
-</ul>
+</script>

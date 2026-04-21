@@ -1,1 +1,18 @@
-[]
+[
+  {
+    "ContainingType": "DrowingTogether.Controllers.PreviewController",
+    "Method": "SavePreview",
+    "RelativePath": "api/preview",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "DrowingTogether.Controllers.PreviewDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]

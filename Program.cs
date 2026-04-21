@@ -19,12 +19,13 @@ namespace DrowingTogether
                     builder.Configuration.GetConnectionString("DefaultConnection")
                 ));
             builder.Services.AddScoped<BoardService>();
-            builder.Services.AddSignalR();
             builder.Services.AddScoped<StrokeService>();
             builder.Services.AddSignalR(options =>
             {
                 options.EnableDetailedErrors = true;
             });
+            builder.Services.AddControllers();
+
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -36,6 +37,7 @@ namespace DrowingTogether
             }
 
             app.MapHub<DrawingHub>("/drawingHub");
+            app.MapControllers();
 
             app.UseHttpsRedirection();
             app.UseStaticFiles();
