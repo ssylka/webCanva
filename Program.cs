@@ -41,7 +41,7 @@ namespace DrowingTogether
             app.MapHub<DrawingHub>("/drawingHub");
             app.MapControllers();
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
             app.UseStaticFiles();
 
             app.UseRouting();
@@ -56,7 +56,7 @@ namespace DrowingTogether
                 db.Database.Migrate();
             }
 
-            app.Run();
+            app.Run($"http://0.0.0.0:8080");
         }
     }
 }
