@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DrowingTogether")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c2cf04f8dd081b2773a22c4f86c9ee29306c7a00")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0b2c1940660160dd20c7a9808431127e5cb6dbd1")]
 [assembly: System.Reflection.AssemblyProductAttribute("DrowingTogether")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DrowingTogether")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

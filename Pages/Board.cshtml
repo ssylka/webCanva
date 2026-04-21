@@ -158,6 +158,44 @@
 
         if (data) {
             connection.invoke("SendShape", boardId, tool, currentColor, currentSize, data);
+
+            setTimeout(savePreview, 150);
+        }
+    });
+    
+    canvas.addEventListener("mouseleave", e => {
+        if (!drawing) return;
+
+        drawing = false;
+
+        const x = e.offsetX;
+        const y = e.offsetY;
+
+        let data = null;
+
+        if (tool === "pen" || tool === "eraser") {
+            data = { points: currentPoints };
+        }
+
+        if (tool === "rect") {
+            data = { x: startX, y: startY, w: x - startX, h: y - startY };
+        }
+
+        if (tool === "square") {
+            let size = Math.min(x - startX, y - startY);
+            data = { x: startX, y: startY, size };
+        }
+
+        if (tool === "circle") {
+            let r = Math.hypot(x - startX, y - startY);
+            data = { x: startX, y: startY, r };
+        }
+
+        if (data) {
+            connection.invoke("SendShape", boardId, tool, currentColor, currentSize, data);
+
+            // 🔥 тоже сохраняем
+            setTimeout(savePreview, 150);
         }
     });
 
@@ -243,5 +281,44 @@
         });
 
         input.addEventListener("blur", finish);
+    }
+       
+    function stopDrawing() {
+        if (!drawing) return;
+
+        drawing = false;
+
+        if (currentStroke.length > 1) {
+            connection.invoke("SendStroke", boardId, currentColor, currentSize, currentStroke);
+            savePreview();
+        }
+
+        currentStroke = [];
+        ctx.beginPath(); // 🔥 сброс пути
+    }
+
+    function savePreview() {
+        const tempCanvas = document.createElement("canvas");
+        const scale = 0.2;
+
+        tempCanvas.width = canvas.width * scale;
+        tempCanvas.height = canvas.height * scale;
+
+        const tctx = tempCanvas.getContext("2d");
+
+        // фон
+        tctx.fillStyle = "#2c2c54";
+        tctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+        // масштабируем картинку
+        tctx.drawImage(canvas, 0, 0, canvas.width, canvas.height, 0, 0, tempCanvas.width, tempCanvas.height);
+
+        const image = tempCanvas.toDataURL("image/jpeg", 0.6);
+
+        fetch("/api/preview", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ boardId, image })
+        });
     }
 </script>
