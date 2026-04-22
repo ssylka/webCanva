@@ -11,7 +11,8 @@
             <input asp-for="Name"
                    class="form-control"
                    style="width:250px;"
-                   placeholder="Board name..." />
+                   placeholder="Board name..."
+                   required minlength="1" />
 
             <button class="btn btn-primary"
                     type="submit"
@@ -24,7 +25,7 @@
                id="search"
                class="form-control"
                style="width:200px;"
-               placeholder="🔍 Search..." />
+               placeholder="🔍 Search..."/>
     </div>
 
     <div class="row g-4" id="boardsGrid">
@@ -36,14 +37,14 @@
 
                     <a asp-page="Board" asp-route-id="@b.Id">
                         <img src="@(string.IsNullOrEmpty(b.PreviewImage)
-                                 ? "/images/empty-preview.png"
+                                 ? "/images/tamplate.png"
                                  : b.PreviewImage)"
                              class="card-img-top"
                              style="height:150px; object-fit:cover;" />
                     </a>
 
                     <div class="card-body">
-                        <a asp-page="Board" asp-route-id="@b.Id" style="text-decoration:none; color: whitesmoke"><h5 class="card-title">@b.Name</h5></a>
+                        <a asp-page="Board" asp-route-id="@b.Id" style="text-decoration:none; color: whitesmoke;"><h5 class="card-title">@b.Name</h5></a>
 
                         <div class="d-flex justify-content-between">
                             <button class="btn btn-sm btn-outline-light"
@@ -71,6 +72,14 @@
 <script>
     const search = document.getElementById("search");
     const cards = document.querySelectorAll(".board-card");
+
+    document.querySelector("form").addEventListener("submit", e => {
+        const input = document.querySelector("input[name='Name']");
+        if (!input.value.trim()) {
+            e.preventDefault();
+            alert("Input a correct name");
+        }
+    });
 
     search.addEventListener("input", () => {
         const value = search.value.toLowerCase();

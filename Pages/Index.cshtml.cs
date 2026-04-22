@@ -24,6 +24,11 @@ namespace DrowingTogether.Pages
 
         public IActionResult OnPostCreate()
         {
+            if (string.IsNullOrWhiteSpace(Name))
+            {
+                ModelState.AddModelError("", "Board name cannot be empty");
+                return Page();
+            }
             _service.Create(Name);
             return RedirectToPage();
         }

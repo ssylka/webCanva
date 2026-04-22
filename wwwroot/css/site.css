@@ -34,4 +34,10 @@ html, body {
     right: 0;
     bottom: 0;
 }
+.card:hover .card-img-top {
+    transform: translateY(-6px) scale(1.02);
+}
 
+.card:hover {
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+}
