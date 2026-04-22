@@ -54,7 +54,6 @@
     @Html.AntiForgeryToken()
 </form>
 <script>
-    // 🔍 Поиск
     const search = document.getElementById("search");
     const cards = document.querySelectorAll(".board-card");
 
@@ -67,7 +66,6 @@
         });
     });
 
-    // ✏️ Переименование
     function renameBoard(id, oldName) {
         const newName = prompt("New name:", oldName);
         if (!newName) return;

@@ -17,6 +17,7 @@
         <button data-tool="rect">⬛</button>
         <button data-tool="square">◼️</button>
         <button data-tool="circle">⚪</button>
+        <button data-tool="text">T</button>
         <button id="exportBtn">💾 JPG</button>
     </div>
 </div>
@@ -73,7 +74,29 @@
     let currentPoints = [];
 
     canvas.addEventListener("mousedown", e => {
+        if (tool === "text") {
+            const text = prompt("Введите текст:");
+
+            if (!text) return;
+
+            const data = {
+                x: e.offsetX,
+                y: e.offsetY,
+                text: text
+            };
+
+            drawShape("text", currentColor, currentSize, data);
+
+            snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            connection.invoke("SendShape", boardId, "text", currentColor, currentSize, data);
+
+            setTimeout(savePreview, 150);
+
+            return;
+        }
         drawing = true;
+
 
         startX = e.offsetX;
         startY = e.offsetY;
@@ -95,7 +118,7 @@
         const x = e.offsetX;
         const y = e.offsetY;
 
-        if (snapshot && (tool !== "pen" && tool !== "eraser")) {
+        if (snapshot && (tool === "rect" || tool === "square" || tool === "circle" || tool === "line")) {
             ctx.putImageData(snapshot, 0, 0);
         }
 
@@ -242,6 +265,12 @@
             ctx.moveTo(data.x1, data.y1);
             ctx.lineTo(data.x2, data.y2);
             ctx.stroke();
+        }
+        if (type === "text") {
+            ctx.fillStyle = color === "#000000" ? "#ffffff" : color;
+            ctx.font = `${size * 5}px Arial`;
+            ctx.textBaseline = "top";
+            ctx.fillText(data.text, data.x, data.y);
         }
     }
 
