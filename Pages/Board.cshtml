@@ -1,34 +1,63 @@
 ﻿@page
 @using System.Text.Json
 @model DrowingTogether.Pages.BoardModel
+<div class="board-page">
+    <div class="top-bar">
+        <div class="left">
+            <div class="left d-flex align-items-center gap-3">
 
-<div class="top-bar">
-    <div class="left">
-        <h1>@Model.Board.Name</h1>
+                <a href="/" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+
+                <h4 class="mb-0" style="color: whitesmoke">@Model.Board.Name</h4>
+
+            </div>
+        </div>
+
+        <div class="toolbar d-flex gap-2">
+
+            <input type="color" id="colorPicker" class="form-control form-control-color" />
+            <input type="range" 
+            id="sizePicker" 
+            class="form-range" 
+            style="width:120px;" 
+            min="1"
+            max="25 "
+            value="3"
+            step="1" />
+
+            <button class="btn btn-light btn-sm" data-tool="pen"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-light btn-sm" data-tool="eraser"><i class="bi bi-eraser"></i></button>
+            <button class="btn btn-light btn-sm" data-tool="line"><i class="bi bi-slash-lg"></i></button>
+            <button class="btn btn-light btn-sm" data-tool="rect"><i class="bi bi-square"></i></button>
+            <button class="btn btn-light btn-sm" data-tool="circle"><i class="bi bi-circle"></i></button>
+            <button class="btn btn-light btn-sm" data-tool="text"><i class="bi bi-type"></i></button>
+
+            <button class="btn btn-success btn-sm" id="exportBtn">
+                <i class="bi bi-download"></i>
+            </button>
+
+        </div>
     </div>
 
-    <div class="toolbar">
-        <input type="color" id="colorPicker" value="#000000" />
-        <input type="range" id="sizePicker" min="1" max="20" value="3" />
-
-        <button data-tool="pen">✏️</button>
-        <button data-tool="eraser">🧽</button>
-        <button data-tool="line">📏</button>
-        <button data-tool="rect">⬛</button>
-        <button data-tool="square">◼️</button>
-        <button data-tool="circle">⚪</button>
-        <button data-tool="text">T</button>
-        <button id="exportBtn">💾 JPG</button>
+    <div class="canvas-container">
+        <canvas id="board"></canvas>
     </div>
-</div>
-
-<div class="canvas-container">
-    <canvas id="board"></canvas>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
 
 <script>
+    document.querySelectorAll("[data-tool]").forEach(btn => {
+        btn.onclick = () => {
+            tool = btn.dataset.tool;
+
+            document.querySelectorAll("[data-tool]").forEach(b => b.classList.remove("btn-primary"));
+            btn.classList.add("btn-primary");
+        };
+    });
+
     const canvas = document.getElementById("board");
     const ctx = canvas.getContext("2d");
 
@@ -267,7 +296,7 @@
             ctx.stroke();
         }
         if (type === "text") {
-            ctx.fillStyle = color === "#000000" ? "#ffffff" : color;
+            ctx.fillStyle = color;
             ctx.font = `${size * 5}px Arial`;
             ctx.textBaseline = "top";
             ctx.fillText(data.text, data.x, data.y);
@@ -314,12 +343,6 @@
         currentPoints = [];
         ctx.beginPath();
     }
-    
-    document.querySelectorAll("[data-tool]").forEach(btn => {
-        btn.onclick = () => {
-            tool = btn.dataset.tool;
-        };
-    });
 
     function savePreview() {
         const tempCanvas = document.createElement("canvas");

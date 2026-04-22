@@ -3,48 +3,63 @@
 @{
     ViewData["Title"] = "Boards";
 }
+<div class="container py-4">
 
-<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
 
-    <h1>Drawing Boards</h1>
+        <form method="post" class="d-flex align-items-center gap-2 mb-0">
+            <input asp-for="Name"
+                   class="form-control"
+                   style="width:250px;"
+                   placeholder="Board name..." />
 
-    <!-- Поиск -->
-    <input type="text" id="search" placeholder="🔍 Search boards..." />
+            <button class="btn btn-primary"
+                    type="submit"
+                    asp-page-handler="Create">
+                <i class="bi bi-plus-lg"></i>
+            </button>
+        </form>
 
-    <!-- Создание -->
-    <form method="post" class="create-form">
-        <input asp-for="Name" placeholder="Enter board name..." />
-        <button type="submit" asp-page-handler="Create">Create</button>
-    </form>
+        <input type="text"
+               id="search"
+               class="form-control"
+               style="width:200px;"
+               placeholder="🔍 Search..." />
+    </div>
 
-    <!-- Список -->
-    <div class="boards-grid" id="boardsGrid">
+    <div class="row g-4" id="boardsGrid">
         @foreach (var b in Model.Boards)
         {
-            <div class="board-card" data-name="@b.Name.ToLower()">
+            <div class="col-md-3 board-card" data-name="@b.Name.ToLower()">
 
-                @if (!string.IsNullOrEmpty(b.PreviewImage))
-                {
-                <a  asp-page="Board" asp-route-id="@b.Id">
-                    <img src="@b.PreviewImage" class="preview"/>
-                </a>
-                }
-                else
-                {
-                    <div class="no-preview">No preview</div>
-                }
+                <div class="card bg-dark text-white h-100 shadow">
 
-                <a class="board-link" asp-page="Board" asp-route-id="@b.Id">
-                    <h3>@b.Name</h3>
-                </a>
+                    <a asp-page="Board" asp-route-id="@b.Id">
+                        <img src="@(string.IsNullOrEmpty(b.PreviewImage)
+                                 ? "/images/empty-preview.png"
+                                 : b.PreviewImage)"
+                             class="card-img-top"
+                             style="height:150px; object-fit:cover;" />
+                    </a>
 
-                <div class="card-actions">
-                    <button onclick="renameBoard('@b.Id', '@b.Name')">✏️</button>
-                    <form method="post" asp-page-handler="Delete" asp-route-id="@b.Id">
-                        <button type="submit">🗑️</button>
-                    </form>
+                    <div class="card-body">
+                        <a asp-page="Board" asp-route-id="@b.Id" style="text-decoration:none; color: whitesmoke"><h5 class="card-title">@b.Name</h5></a>
+
+                        <div class="d-flex justify-content-between">
+                            <button class="btn btn-sm btn-outline-light"
+                                    onclick="renameBoard('@b.Id', '@b.Name')">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+
+                            <form method="post" asp-page-handler="Delete" asp-route-id="@b.Id">
+                                <button class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
                 </div>
-
             </div>
         }
     </div>

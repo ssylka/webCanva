@@ -1,164 +1,37 @@
 ﻿body {
-    margin: 0;
-    font-family: 'Segoe UI', sans-serif;
     background: linear-gradient(135deg, #1e1e2f, #2c2c54);
     color: white;
 }
-
-.container {
-    max-width: 1100px;
-    margin: 40px auto;
-    padding: 20px;
-    text-align: center;
+html, body {
+    height: 100%;
+    margin: 0;
 }
-
-h1 {
-    margin-bottom: 20px;
-}
-
-/* Поиск */
-#search {
-    padding: 12px;
-    width: 300px;
-    border-radius: 10px;
-    border: none;
-    margin-bottom: 20px;
-}
-
-/* Форма */
-.create-form {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-bottom: 30px;
-}
-
-.create-form input {
-    padding: 12px;
-    border-radius: 10px;
-    border: none;
-    width: 250px;
-}
-
-.create-form button {
-    padding: 12px 20px;
-    border-radius: 10px;
-    border: none;
-    background: #6c5ce7;
-    color: white;
-    cursor: pointer;
-}
-
-.create-form button:hover {
-    background: #a29bfe;
-}
-
-/* Карточки */
-.boards-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-    gap: 20px;
-}
-
-.board-card {
-    background: rgba(255,255,255,0.08);
-    padding: 20px;
-    border-radius: 15px;
-    transition: 0.2s;
-    position: relative;
-}
-
-.board-card:hover {
-    transform: scale(1.03);
-    background: rgba(255,255,255,0.15);
-}
-
-.board-link {
-    text-decoration: none;
-    color: white;
-}
-
-.board-link h3 {
-    margin: 0 0 10px 0;
-}
-
-/* Кнопки */
-.card-actions {
-    display: flex;
-    justify-content: space-between;
-}
-
-.card-actions button {
-    border: none;
-    background: transparent;
-    font-size: 18px;
-    cursor: pointer;
-}
-
-.card-actions button:hover {
-    transform: scale(1.2);
-}
-
-
-.preview {
+#board {
     width: 100%;
-    height: 140px;
-    object-fit: cover;
-    border-radius: 10px;
-    margin-bottom: 10px;
-    background: #fff;
+    height: 100%;
+    display: block;
 }
-
-.no-preview {
-    height: 140px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0.5;
-    font-size: 14px;
-}
-
 .board-page {
-    display: flex;
-    flex-direction: column;
     height: 100vh;
+    overflow: hidden;
 }
-
 .top-bar {
     position: fixed;
-    top: 0;
     left: 0;
     right: 0;
     height: 70px;
-    padding: 10px 20px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    padding: 10px 20px;
     background: rgba(30,30,47,0.95);
-    backdrop-filter: blur(10px);
+    z-index: 10;
 }
-
-.top-bar h1 {
-    margin: 0;
-    font-size: 22px;
-}
-
-.toolbar {
-    display: flex;
-    gap: 8px;
-}
-
 .canvas-container {
     position: absolute;
     top: 70px;
     left: 0;
     right: 0;
     bottom: 0;
-    background: #2c2c54;
 }
 
-#board {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
